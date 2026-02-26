@@ -6,6 +6,35 @@ use std::path::Path;
 
 pub struct SecurityAnalyzer;
 
+/// Common JavaScript patterns that are widely accepted and should not trigger warnings
+const COMMON_PATTERNS: &[(&str, &str)] = &[
+    // DOM APIs - common and safe
+    ("window", "addEventListener"),
+    ("window", "removeEventListener"),
+    ("document", "addEventListener"),
+    ("document", "removeEventListener"),
+    ("document", "getElementById"),
+    ("document", "querySelector"),
+    ("document", "querySelectorAll"),
+    ("document", "createElement"),
+    ("document", "createTextNode"),
+    ("document", "getElementByClassName"),
+    ("document", "getElementsByTagName"),
+    // Array/Object built-ins - commonly used
+    ("Array", "from"),
+    ("Array", "isArray"),
+    ("Object", "keys"),
+    ("Object", "values"),
+    ("Object", "entries"),
+    ("Object", "assign"),
+    ("JSON", "parse"),
+    ("JSON", "stringify"),
+];
+
+fn is_common_pattern(object: &str, property: &str) -> bool {
+    COMMON_PATTERNS.iter().any(|(obj, prop)| *obj == object && *prop == property)
+}
+
 impl SecurityAnalyzer {
     pub fn new() -> Self {
         Self
@@ -296,9 +325,12 @@ impl SecurityAnalyzer {
             }
             Expression::StaticMemberExpression(member_expr) => {
                 if let Expression::Identifier(ident) = &member_expr.object {
-                    if ident.name == "console" {
-                        let method = &member_expr.property.name;
-                        if matches!(method.as_str(), "log" | "debug" | "info" | "warn" | "error") {
+                    let method = member_expr.property.name.as_str();
+
+                    // Skip common patterns that are widely accepted
+                    if !is_common_pattern(ident.name.as_str(), method) {
+                        // Only warn about console methods if not whitelisted
+                        if ident.name == "console" && matches!(method, "log" | "debug" | "info" | "warn" | "error") {
                             self.add_issue(
                                 issues,
                                 file_path,

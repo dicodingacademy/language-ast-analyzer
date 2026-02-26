@@ -5,6 +5,17 @@ use oxc_span::Span;
 use std::collections::HashSet;
 use std::path::Path;
 
+/// Context for naming analysis
+#[derive(Clone, Copy)]
+enum NamingContext {
+    /// Top-level variable/const declaration
+    TopLevel,
+    /// Function parameter (more lenient)
+    Parameter,
+    /// Inside function body (same as top-level rules)
+    FunctionBody,
+}
+
 pub struct NamingAnalyzer;
 
 impl NamingAnalyzer {
@@ -50,14 +61,30 @@ impl NamingAnalyzer {
         });
     }
 
-    fn is_generic_name(name: &str) -> bool {
-        let generic_names = [
-            "data", "result", "info", "value", "item", "obj", "object", "stuff", "things",
-            "content", "output", "input", "temp", "variable", "param", "args", "opts", "options",
-            "err", "err", // Common abbreviations
-            "val", "elem", "arr", "str", "num", "bool",
-        ];
-        generic_names.contains(&name.to_lowercase().as_str())
+    fn is_generic_name(name: &str, context: NamingContext) -> bool {
+        match context {
+            NamingContext::Parameter => {
+                // More lenient for function parameters - these are commonly accepted
+                let generic_names = [
+                    "stuff", "things", "content", "variable", "param", // Still too generic even for params
+                    "obj", "object", // Should be more specific
+                ];
+                generic_names.contains(&name.to_lowercase().as_str())
+            }
+            NamingContext::TopLevel | NamingContext::FunctionBody => {
+                // Stricter for top-level variables and function body variables
+                // Common JS names like data, err, opts, args are OK for parameters
+                // but should be more descriptive in other contexts
+                let generic_names = [
+                    "stuff", "things", "content", "variable", "param", // Too generic
+                    "obj", "object", // Should be more specific
+                    "output", "input", // Should be more descriptive
+                    "data", "result", "info", "value", "item", // Too generic for variables
+                    "opts", "args", "err", // OK for params, not for variables
+                ];
+                generic_names.contains(&name.to_lowercase().as_str())
+            }
+        }
     }
 
     fn is_too_short(name: &str) -> bool {
@@ -108,9 +135,11 @@ impl NamingAnalyzer {
     }
 
     fn is_generic_function_name(name: &str) -> bool {
+        // Only flag truly generic function names
+        // Allow common patterns: handle, handler, callback are standard in JS
         let generic_names = [
-            "handle", "process", "execute", "run", "do", "perform", "action", "handler",
-            "callback", "fn", "func",
+            "process", "execute", "run", "do", "perform", "action", // Too generic
+            "fn", "func", // Should use more descriptive names
         ];
         generic_names.contains(&name.to_lowercase().as_str())
     }
@@ -128,6 +157,7 @@ impl Analyzer for NamingAnalyzer {
                 file_path,
                 source_code,
                 &mut declared_names,
+                NamingContext::TopLevel,
             );
         }
 
@@ -143,6 +173,7 @@ impl NamingAnalyzer {
         file_path: &Path,
         source_code: &str,
         declared_names: &mut HashSet<String>,
+        context: NamingContext,
     ) {
         match stmt {
             Statement::VariableDeclaration(var_decl) => {
@@ -151,8 +182,8 @@ impl NamingAnalyzer {
                         let name = ident.name.as_str();
                         declared_names.insert(name.to_string());
 
-                        // Check for generic names
-                        if Self::is_generic_name(name) {
+                        // Check for generic names (context-aware)
+                        if Self::is_generic_name(name, context) {
                             self.add_issue(
                                 issues,
                                 file_path,
@@ -213,7 +244,7 @@ impl NamingAnalyzer {
                         );
                     }
 
-                    // Check parameters
+                    // Check parameters with Parameter context (more lenient)
                     for param in &func.params.items {
                         self.analyze_parameter(issues, param, file_path, source_code);
                     }
@@ -227,13 +258,14 @@ impl NamingAnalyzer {
                             file_path,
                             source_code,
                             declared_names,
+                            NamingContext::FunctionBody,
                         );
                     }
                 }
             }
             Statement::BlockStatement(block) => {
                 for stmt in &block.body {
-                    self.analyze_statement(issues, stmt, file_path, source_code, declared_names);
+                    self.analyze_statement(issues, stmt, file_path, source_code, declared_names, context);
                 }
             }
             Statement::IfStatement(if_stmt) => {
@@ -244,6 +276,7 @@ impl NamingAnalyzer {
                     file_path,
                     source_code,
                     declared_names,
+                    context,
                 );
                 if let Some(alternate) = &if_stmt.alternate {
                     self.analyze_statement(
@@ -252,6 +285,7 @@ impl NamingAnalyzer {
                         file_path,
                         source_code,
                         declared_names,
+                        context,
                     );
                 }
             }
@@ -264,7 +298,7 @@ impl NamingAnalyzer {
                                     let name = ident.name.as_str();
                                     // Allow short names for loop counters
                                     if !["i", "j", "k", "x", "y"].contains(&name) {
-                                        if Self::is_generic_name(name) {
+                                        if Self::is_generic_name(name, context) {
                                             self.add_issue(
                                                 issues,
                                                 file_path,
@@ -297,6 +331,7 @@ impl NamingAnalyzer {
                     file_path,
                     source_code,
                     declared_names,
+                    context,
                 );
             }
             Statement::ExpressionStatement(expr_stmt) => {
@@ -316,7 +351,8 @@ impl NamingAnalyzer {
         if let BindingPatternKind::BindingIdentifier(ident) = &param.pattern.kind {
             let name = ident.name.as_str();
 
-            if Self::is_generic_name(name) {
+            // Use Parameter context - more lenient for function params
+            if Self::is_generic_name(name, NamingContext::Parameter) {
                 self.add_issue(
                     issues,
                     file_path,

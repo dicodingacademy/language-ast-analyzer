@@ -1,5 +1,5 @@
 use super::Analyzer;
-use crate::types::{CodeIssue, Category, Severity};
+use crate::types::{Category, CodeIssue, Severity};
 use oxc_ast::ast::*;
 use oxc_span::Span;
 use std::collections::HashSet;
@@ -52,9 +52,8 @@ impl NamingAnalyzer {
 
     fn is_generic_name(name: &str) -> bool {
         let generic_names = [
-            "data", "result", "info", "value", "item", "obj", "object",
-            "stuff", "things", "content", "output", "input", "temp",
-            "variable", "param", "args", "opts", "options",
+            "data", "result", "info", "value", "item", "obj", "object", "stuff", "things",
+            "content", "output", "input", "temp", "variable", "param", "args", "opts", "options",
             "err", "err", // Common abbreviations
             "val", "elem", "arr", "str", "num", "bool",
         ];
@@ -86,9 +85,23 @@ impl NamingAnalyzer {
 
         // Check if it might be a boolean (common boolean words without prefix)
         let boolean_words = [
-            "active", "visible", "enabled", "disabled", "ready", "loading",
-            "valid", "invalid", "allowed", "blocked", "open", "closed",
-            "true", "false", "undefined", "null", "empty",
+            "active",
+            "visible",
+            "enabled",
+            "disabled",
+            "ready",
+            "loading",
+            "valid",
+            "invalid",
+            "allowed",
+            "blocked",
+            "open",
+            "closed",
+            "true",
+            "false",
+            "undefined",
+            "null",
+            "empty",
         ];
 
         boolean_words.contains(&name_lower.as_str())
@@ -96,8 +109,8 @@ impl NamingAnalyzer {
 
     fn is_generic_function_name(name: &str) -> bool {
         let generic_names = [
-            "handle", "process", "execute", "run", "do", "perform",
-            "action", "handler", "callback", "fn", "func",
+            "handle", "process", "execute", "run", "do", "perform", "action", "handler",
+            "callback", "fn", "func",
         ];
         generic_names.contains(&name.to_lowercase().as_str())
     }
@@ -109,7 +122,13 @@ impl Analyzer for NamingAnalyzer {
         let mut declared_names: HashSet<String> = HashSet::new();
 
         for stmt in &program.body {
-            self.analyze_statement(&mut issues, stmt, file_path, source_code, &mut declared_names);
+            self.analyze_statement(
+                &mut issues,
+                stmt,
+                file_path,
+                source_code,
+                &mut declared_names,
+            );
         }
 
         issues
@@ -139,7 +158,7 @@ impl NamingAnalyzer {
                                 file_path,
                                 source_code,
                                 ident.span,
-                                format!("Variable '{}' has a generic name. Use a more descriptive name that indicates its purpose", name),
+                                format!("Variable '{}' memiliki penamaan yang cukup umum, bisa kamu buat agar lebih deskriptif agar tidak membingungkan ya.", name),
                                 "no-generic-name".to_string(),
                                 Severity::Suggestion,
                             );
@@ -152,7 +171,7 @@ impl NamingAnalyzer {
                                 file_path,
                                 source_code,
                                 ident.span,
-                                format!("Variable '{}' name is too short. Use at least 3 characters (except for loop counters)", name),
+                                format!("Variable '{}' memiliki penamaan yang cukup pendek. kamu bisa gunakan penamaan variable yang lebih deskriptif agar kamu tidak bingung dikemudian hari :)", name),
                                 "no-short-name".to_string(),
                                 Severity::Suggestion,
                             );
@@ -165,7 +184,7 @@ impl NamingAnalyzer {
                                 file_path,
                                 source_code,
                                 ident.span,
-                                format!("Boolean variable '{}' should be prefixed with is/has/can/should", name),
+                                format!("Dalam penulisan variable boolean seperti'{}' kamu bisa menambahkan sebuah prefix seperti is/has/can/should agar kita tahu nilai kembalian dari variable tersebut adalah boolean", name),
                                 "boolean-prefix".to_string(),
                                 Severity::Suggestion,
                             );
@@ -174,7 +193,10 @@ impl NamingAnalyzer {
                 }
             }
             Statement::FunctionDeclaration(func) => {
-                let func_name = func.id.as_ref().map_or("<anonymous>", |id| id.name.as_str());
+                let func_name = func
+                    .id
+                    .as_ref()
+                    .map_or("<anonymous>", |id| id.name.as_str());
 
                 // Skip anonymous functions
                 if func_name != "<anonymous>" {
@@ -185,7 +207,7 @@ impl NamingAnalyzer {
                             file_path,
                             source_code,
                             func.span,
-                            format!("Function '{}' has a generic name. Use a more descriptive name that describes its function", func_name),
+                            format!("Fungsi '{}' memiliki penamaan variable yang cukup umum. Gunakan penamaan variable yang dapat menggambarkan untuk apa fungsi tersebut dibuat", func_name),
                             "no-generic-function-name".to_string(),
                             Severity::Suggestion,
                         );
@@ -199,7 +221,13 @@ impl NamingAnalyzer {
 
                 if let Some(body) = &func.body {
                     for stmt in &body.statements {
-                        self.analyze_statement(issues, stmt, file_path, source_code, declared_names);
+                        self.analyze_statement(
+                            issues,
+                            stmt,
+                            file_path,
+                            source_code,
+                            declared_names,
+                        );
                     }
                 }
             }
@@ -210,9 +238,21 @@ impl NamingAnalyzer {
             }
             Statement::IfStatement(if_stmt) => {
                 self.analyze_expression(issues, &if_stmt.test, file_path, source_code);
-                self.analyze_statement(issues, &if_stmt.consequent, file_path, source_code, declared_names);
+                self.analyze_statement(
+                    issues,
+                    &if_stmt.consequent,
+                    file_path,
+                    source_code,
+                    declared_names,
+                );
                 if let Some(alternate) = &if_stmt.alternate {
-                    self.analyze_statement(issues, alternate, file_path, source_code, declared_names);
+                    self.analyze_statement(
+                        issues,
+                        alternate,
+                        file_path,
+                        source_code,
+                        declared_names,
+                    );
                 }
             }
             Statement::ForStatement(for_stmt) => {
@@ -230,7 +270,10 @@ impl NamingAnalyzer {
                                                 file_path,
                                                 source_code,
                                                 ident.span,
-                                                format!("Loop variable '{}' has a generic name", name),
+                                                format!(
+                                                    "Variabel '{}' memiliki penamaan yang cukup umum, kamu bisa improve agar lebih deskriptif ya agar tidak membingungkan",
+                                                    name
+                                                ),
                                                 "no-generic-name".to_string(),
                                                 Severity::Suggestion,
                                             );
@@ -248,7 +291,13 @@ impl NamingAnalyzer {
                 if let Some(update) = &for_stmt.update {
                     self.analyze_expression(issues, update, file_path, source_code);
                 }
-                self.analyze_statement(issues, &for_stmt.body, file_path, source_code, declared_names);
+                self.analyze_statement(
+                    issues,
+                    &for_stmt.body,
+                    file_path,
+                    source_code,
+                    declared_names,
+                );
             }
             Statement::ExpressionStatement(expr_stmt) => {
                 self.analyze_expression(issues, &expr_stmt.expression, file_path, source_code);
@@ -273,7 +322,7 @@ impl NamingAnalyzer {
                     file_path,
                     source_code,
                     ident.span,
-                    format!("Parameter '{}' has a generic name. Use a more descriptive name", name),
+                    format!("Parameter '{}' memiliki penamaan yang cukup umum, agar tidak membingungkan kamu bisa gunakan penamaan yang lebih deskriptif", name),
                     "no-generic-name".to_string(),
                     Severity::Suggestion,
                 );

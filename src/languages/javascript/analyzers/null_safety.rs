@@ -1,5 +1,5 @@
 use super::Analyzer;
-use crate::types::{CodeIssue, Category, Severity};
+use crate::types::{Category, CodeIssue, Severity};
 use oxc_ast::ast::*;
 use oxc_span::Span;
 use std::path::Path;
@@ -106,7 +106,7 @@ impl NullSafetyAnalyzer {
                                         file_path,
                                         source_code,
                                         var.span,
-                                        "Array destructuring without default values. Use: const [first = defaultValue] = array".to_string(),
+                                        "Disini kamu melakukan destructuring array tanpa melakukan set default values, bisa dipertimbangkan untuk melakukan hal ini jika perlu ya \nContoh: const [first = defaultValue] = iniNilaiArray".to_string(),
                                         "no-unsafe-destructuring".to_string(),
                                         Severity::Suggestion,
                                     );
@@ -190,7 +190,8 @@ impl NullSafetyAnalyzer {
                 if let Expression::Identifier(ident) = &comp_member.object {
                     if ident.name.to_lowercase().contains("array")
                         || ident.name.to_lowercase().contains("arr")
-                        || ident.name.to_lowercase().ends_with('s') {
+                        || ident.name.to_lowercase().ends_with('s')
+                    {
                         // Suggest checking array length before accessing
                         self.add_issue(
                             issues,
@@ -214,7 +215,10 @@ impl NullSafetyAnalyzer {
 
                         // These methods are safe to call on potentially null values
                         // but others like map, filter, reduce could fail
-                        if matches!(method.as_str(), "map" | "filter" | "reduce" | "forEach" | "find" | "some" | "every") {
+                        if matches!(
+                            method.as_str(),
+                            "map" | "filter" | "reduce" | "forEach" | "find" | "some" | "every"
+                        ) {
                             self.add_issue(
                                 issues,
                                 file_path,

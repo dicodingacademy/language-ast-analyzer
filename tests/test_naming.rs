@@ -11,11 +11,12 @@ fn test_naming_generic_names() {
     
     let analysis = result.unwrap();
     
-    // Should detect generic generic names like 'data', 'result', 'info', 'value'
+    // Should detect generic names like 'data', 'result', 'info', 'value'
+    // Messages are in Indonesian: "penamaan yang cukup umum" / "lebih deskriptif"
     let generic_issues: Vec<_> = analysis.issues.iter()
-        .filter(|issue| issue.message.contains("generic") || issue.message.contains("descriptive"))
+        .filter(|issue| issue.rule == "no-generic-name" || issue.rule == "no-generic-function-name")
         .collect();
-    
+
     assert!(!generic_issues.is_empty(), "Should detect generic variable names");
 }
 

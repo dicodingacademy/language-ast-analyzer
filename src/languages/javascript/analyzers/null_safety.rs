@@ -157,6 +157,48 @@ impl NullSafetyAnalyzer {
                     self.analyze_expression(issues, expr, file_path, source_code);
                 }
             }
+            Statement::WhileStatement(while_stmt) => {
+                self.analyze_expression(issues, &while_stmt.test, file_path, source_code);
+                self.analyze_statement(issues, &while_stmt.body, file_path, source_code);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.analyze_expression(issues, &do_while_stmt.test, file_path, source_code);
+                self.analyze_statement(issues, &do_while_stmt.body, file_path, source_code);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.analyze_expression(issues, &for_in_stmt.right, file_path, source_code);
+                self.analyze_statement(issues, &for_in_stmt.body, file_path, source_code);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.analyze_expression(issues, &for_of_stmt.right, file_path, source_code);
+                self.analyze_statement(issues, &for_of_stmt.body, file_path, source_code);
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                self.analyze_expression(issues, &switch_stmt.discriminant, file_path, source_code);
+                for case in &switch_stmt.cases {
+                    if let Some(test) = &case.test {
+                        self.analyze_expression(issues, test, file_path, source_code);
+                    }
+                    for stmt in &case.consequent {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
+            Statement::TryStatement(try_stmt) => {
+                for stmt in &try_stmt.block.body {
+                    self.analyze_statement(issues, stmt, file_path, source_code);
+                }
+                if let Some(handler) = &try_stmt.handler {
+                    for stmt in &handler.body.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+                if let Some(finalizer) = &try_stmt.finalizer {
+                    for stmt in &finalizer.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -170,67 +212,13 @@ impl NullSafetyAnalyzer {
     ) {
         match expr {
             Expression::StaticMemberExpression(member_expr) => {
-                // Check for chained property access without optional chaining
-                // If the object is another member expression, suggest optional chaining
-                if let Expression::StaticMemberExpression(_) = &member_expr.object {
-                    self.add_issue(
-                        issues,
-                        file_path,
-                        source_code,
-                        member_expr.span,
-                        "Akses properti berantai tanpa pengecekan null. Pertimbangkan menggunakan optional chaining (?.) atau validasi data terlebih dahulu".to_string(),
-                        "no-unsafe-member-access".to_string(),
-                        Severity::Warning,
-                    );
-                }
                 self.analyze_expression(issues, &member_expr.object, file_path, source_code);
             }
             Expression::ComputedMemberExpression(comp_member) => {
-                // Check for array[index] access without validation
-                if let Expression::Identifier(ident) = &comp_member.object {
-                    if ident.name.to_lowercase().contains("array")
-                        || ident.name.to_lowercase().contains("arr")
-                        || ident.name.to_lowercase().ends_with('s')
-                    {
-                        // Suggest checking array length before accessing
-                        self.add_issue(
-                            issues,
-                            file_path,
-                            source_code,
-                            comp_member.span,
-                            format!("Akses array langsung tanpa pengecekan panjang. Pertimbangkan untuk mengecek apakah index ada terlebih dahulu"),
-                            "no-unsafe-array-access".to_string(),
-                            Severity::Suggestion,
-                        );
-                    }
-                }
                 self.analyze_expression(issues, &comp_member.object, file_path, source_code);
                 self.analyze_expression(issues, &comp_member.expression, file_path, source_code);
             }
             Expression::CallExpression(call_expr) => {
-                // Check for array methods that could fail on empty/null
-                if let Expression::StaticMemberExpression(member) = &call_expr.callee {
-                    if let Expression::Identifier(_ident) = &member.object {
-                        let method = &member.property.name;
-
-                        // These methods are safe to call on potentially null values
-                        // but others like map, filter, reduce could fail
-                        if matches!(
-                            method.as_str(),
-                            "map" | "filter" | "reduce" | "forEach" | "find" | "some" | "every"
-                        ) {
-                            self.add_issue(
-                                issues,
-                                file_path,
-                                source_code,
-                                call_expr.span,
-                                format!("Memanggil {} pada array yang berpotensi null/undefined. Tambahkan pengecekan null terlebih dahulu", method),
-                                "no-unsafe-array-method".to_string(),
-                                Severity::Warning,
-                            );
-                        }
-                    }
-                }
                 self.analyze_expression(issues, &call_expr.callee, file_path, source_code);
                 for arg in &call_expr.arguments {
                     if let Some(arg_expr) = arg.as_expression() {
@@ -271,6 +259,23 @@ impl NullSafetyAnalyzer {
                 self.analyze_expression(issues, &cond_expr.test, file_path, source_code);
                 self.analyze_expression(issues, &cond_expr.consequent, file_path, source_code);
                 self.analyze_expression(issues, &cond_expr.alternate, file_path, source_code);
+            }
+            Expression::TemplateLiteral(tmpl) => {
+                for expr in &tmpl.expressions {
+                    self.analyze_expression(issues, expr, file_path, source_code);
+                }
+            }
+            Expression::ArrowFunctionExpression(arrow) => {
+                for stmt in &arrow.body.statements {
+                    self.analyze_statement(issues, stmt, file_path, source_code);
+                }
+            }
+            Expression::FunctionExpression(func_expr) => {
+                if let Some(body) = &func_expr.body {
+                    for stmt in &body.statements {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
             }
             _ => {}
         }

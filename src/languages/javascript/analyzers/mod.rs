@@ -1,17 +1,17 @@
-pub mod patterns;
-pub mod typescript;
-pub mod security;
 pub mod best_practices;
-pub mod unused;
 pub mod complexity;
 pub mod magic_numbers;
 pub mod naming;
 pub mod null_safety;
+pub mod patterns;
+pub mod security;
+pub mod typescript;
+pub mod unused;
 
 use crate::types::CodeIssue;
 use oxc_ast::ast::Program;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use std::collections::{HashSet, HashMap};
 
 /// Trait for AST analyzers
 pub trait Analyzer {
@@ -47,7 +47,12 @@ impl Analyzers {
         }
     }
 
-    pub fn analyze_module(&self, program: &Program, file_path: &Path, source_code: &str) -> Vec<CodeIssue> {
+    pub fn analyze_module(
+        &self,
+        program: &Program,
+        file_path: &Path,
+        source_code: &str,
+    ) -> Vec<CodeIssue> {
         let mut issues = Vec::new();
 
         issues.extend(self.patterns.analyze(program, file_path, source_code));

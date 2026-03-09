@@ -151,6 +151,44 @@ impl MagicNumberAnalyzer {
                 self.analyze_expression(issues, &while_stmt.test, file_path, source_code, string_literals);
                 self.analyze_statement(issues, &while_stmt.body, file_path, source_code, string_literals);
             }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.analyze_expression(issues, &do_while_stmt.test, file_path, source_code, string_literals);
+                self.analyze_statement(issues, &do_while_stmt.body, file_path, source_code, string_literals);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.analyze_expression(issues, &for_in_stmt.right, file_path, source_code, string_literals);
+                self.analyze_statement(issues, &for_in_stmt.body, file_path, source_code, string_literals);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.analyze_expression(issues, &for_of_stmt.right, file_path, source_code, string_literals);
+                self.analyze_statement(issues, &for_of_stmt.body, file_path, source_code, string_literals);
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                self.analyze_expression(issues, &switch_stmt.discriminant, file_path, source_code, string_literals);
+                for case in &switch_stmt.cases {
+                    if let Some(test) = &case.test {
+                        self.analyze_expression(issues, test, file_path, source_code, string_literals);
+                    }
+                    for stmt in &case.consequent {
+                        self.analyze_statement(issues, stmt, file_path, source_code, string_literals);
+                    }
+                }
+            }
+            Statement::TryStatement(try_stmt) => {
+                for stmt in &try_stmt.block.body {
+                    self.analyze_statement(issues, stmt, file_path, source_code, string_literals);
+                }
+                if let Some(handler) = &try_stmt.handler {
+                    for stmt in &handler.body.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code, string_literals);
+                    }
+                }
+                if let Some(finalizer) = &try_stmt.finalizer {
+                    for stmt in &finalizer.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code, string_literals);
+                    }
+                }
+            }
             Statement::ReturnStatement(ret_stmt) => {
                 if let Some(expr) = &ret_stmt.argument {
                     self.analyze_expression(issues, expr, file_path, source_code, string_literals);

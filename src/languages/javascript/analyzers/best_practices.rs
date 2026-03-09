@@ -185,6 +185,38 @@ impl BestPracticeAnalyzer {
                     Severity::Warning,
                 );
             }
+            Statement::WhileStatement(while_stmt) => {
+                self.analyze_expression(issues, &while_stmt.test, file_path, source_code);
+                self.analyze_statement(issues, &while_stmt.body, file_path, source_code);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.analyze_expression(issues, &do_while_stmt.test, file_path, source_code);
+                self.analyze_statement(issues, &do_while_stmt.body, file_path, source_code);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.analyze_expression(issues, &for_in_stmt.right, file_path, source_code);
+                self.analyze_statement(issues, &for_in_stmt.body, file_path, source_code);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.analyze_expression(issues, &for_of_stmt.right, file_path, source_code);
+                self.analyze_statement(issues, &for_of_stmt.body, file_path, source_code);
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                self.analyze_expression(issues, &switch_stmt.discriminant, file_path, source_code);
+                for case in &switch_stmt.cases {
+                    if let Some(test) = &case.test {
+                        self.analyze_expression(issues, test, file_path, source_code);
+                    }
+                    for stmt in &case.consequent {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
+            Statement::ReturnStatement(ret_stmt) => {
+                if let Some(expr) = &ret_stmt.argument {
+                    self.analyze_expression(issues, expr, file_path, source_code);
+                }
+            }
             _ => {}
         }
     }
@@ -270,6 +302,43 @@ impl BestPracticeAnalyzer {
                 for expr in &seq_expr.expressions {
                     self.analyze_expression(issues, expr, file_path, source_code);
                 }
+            }
+            Expression::ConditionalExpression(cond_expr) => {
+                self.analyze_expression(issues, &cond_expr.test, file_path, source_code);
+                self.analyze_expression(issues, &cond_expr.consequent, file_path, source_code);
+                self.analyze_expression(issues, &cond_expr.alternate, file_path, source_code);
+            }
+            Expression::TemplateLiteral(tmpl) => {
+                for expr in &tmpl.expressions {
+                    self.analyze_expression(issues, expr, file_path, source_code);
+                }
+            }
+            Expression::ArrowFunctionExpression(arrow) => {
+                for stmt in &arrow.body.statements {
+                    self.analyze_statement(issues, stmt, file_path, source_code);
+                }
+            }
+            Expression::FunctionExpression(func_expr) => {
+                if let Some(body) = &func_expr.body {
+                    for stmt in &body.statements {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
+            Expression::CallExpression(call_expr) => {
+                self.analyze_expression(issues, &call_expr.callee, file_path, source_code);
+                for arg in &call_expr.arguments {
+                    if let Some(expr) = arg.as_expression() {
+                        self.analyze_expression(issues, expr, file_path, source_code);
+                    }
+                }
+            }
+            Expression::AssignmentExpression(assign_expr) => {
+                self.analyze_expression(issues, &assign_expr.right, file_path, source_code);
+            }
+            Expression::LogicalExpression(logical_expr) => {
+                self.analyze_expression(issues, &logical_expr.left, file_path, source_code);
+                self.analyze_expression(issues, &logical_expr.right, file_path, source_code);
             }
             _ => {}
         }

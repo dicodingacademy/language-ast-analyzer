@@ -121,6 +121,55 @@ impl UnusedAnalyzer {
                         }
                     }
                 }
+                self.collect_declarations(&for_stmt.body, declared);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                if let ForStatementLeft::VariableDeclaration(var_decl) = &for_in_stmt.left {
+                    for var in &var_decl.declarations {
+                        if let BindingPatternKind::BindingIdentifier(ident) = &var.id.kind {
+                            declared.insert(ident.name.to_string(), ident.span);
+                        }
+                    }
+                }
+                self.collect_declarations(&for_in_stmt.body, declared);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                if let ForStatementLeft::VariableDeclaration(var_decl) = &for_of_stmt.left {
+                    for var in &var_decl.declarations {
+                        if let BindingPatternKind::BindingIdentifier(ident) = &var.id.kind {
+                            declared.insert(ident.name.to_string(), ident.span);
+                        }
+                    }
+                }
+                self.collect_declarations(&for_of_stmt.body, declared);
+            }
+            Statement::WhileStatement(while_stmt) => {
+                self.collect_declarations(&while_stmt.body, declared);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.collect_declarations(&do_while_stmt.body, declared);
+            }
+            Statement::TryStatement(try_stmt) => {
+                for stmt in &try_stmt.block.body {
+                    self.collect_declarations(stmt, declared);
+                }
+                if let Some(handler) = &try_stmt.handler {
+                    for stmt in &handler.body.body {
+                        self.collect_declarations(stmt, declared);
+                    }
+                }
+                if let Some(finalizer) = &try_stmt.finalizer {
+                    for stmt in &finalizer.body {
+                        self.collect_declarations(stmt, declared);
+                    }
+                }
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                for case in &switch_stmt.cases {
+                    for stmt in &case.consequent {
+                        self.collect_declarations(stmt, declared);
+                    }
+                }
             }
             _ => {}
         }
@@ -162,6 +211,58 @@ impl UnusedAnalyzer {
             Statement::ReturnStatement(ret_stmt) => {
                 if let Some(expr) = &ret_stmt.argument {
                     self.collect_expression_usages(expr, used);
+                }
+            }
+            Statement::WhileStatement(while_stmt) => {
+                self.collect_expression_usages(&while_stmt.test, used);
+                self.collect_usages(&while_stmt.body, used);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.collect_expression_usages(&do_while_stmt.test, used);
+                self.collect_usages(&do_while_stmt.body, used);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.collect_expression_usages(&for_in_stmt.right, used);
+                self.collect_usages(&for_in_stmt.body, used);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.collect_expression_usages(&for_of_stmt.right, used);
+                self.collect_usages(&for_of_stmt.body, used);
+            }
+            Statement::TryStatement(try_stmt) => {
+                for stmt in &try_stmt.block.body {
+                    self.collect_usages(stmt, used);
+                }
+                if let Some(handler) = &try_stmt.handler {
+                    for stmt in &handler.body.body {
+                        self.collect_usages(stmt, used);
+                    }
+                }
+                if let Some(finalizer) = &try_stmt.finalizer {
+                    for stmt in &finalizer.body {
+                        self.collect_usages(stmt, used);
+                    }
+                }
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                self.collect_expression_usages(&switch_stmt.discriminant, used);
+                for case in &switch_stmt.cases {
+                    if let Some(test) = &case.test {
+                        self.collect_expression_usages(test, used);
+                    }
+                    for stmt in &case.consequent {
+                        self.collect_usages(stmt, used);
+                    }
+                }
+            }
+            Statement::ThrowStatement(throw_stmt) => {
+                self.collect_expression_usages(&throw_stmt.argument, used);
+            }
+            Statement::VariableDeclaration(var_decl) => {
+                for var in &var_decl.declarations {
+                    if let Some(init) = &var.init {
+                        self.collect_expression_usages(init, used);
+                    }
                 }
             }
             _ => {}
@@ -214,6 +315,52 @@ impl UnusedAnalyzer {
                     if let Some(arg_expr) = arg.as_expression() {
                         self.collect_expression_usages(arg_expr, used);
                     }
+                }
+            }
+            Expression::ConditionalExpression(cond_expr) => {
+                self.collect_expression_usages(&cond_expr.test, used);
+                self.collect_expression_usages(&cond_expr.consequent, used);
+                self.collect_expression_usages(&cond_expr.alternate, used);
+            }
+            Expression::ArrayExpression(arr_expr) => {
+                for elem in &arr_expr.elements {
+                    if let Some(expr) = elem.as_expression() {
+                        self.collect_expression_usages(expr, used);
+                    }
+                }
+            }
+            Expression::ObjectExpression(obj_expr) => {
+                for prop in &obj_expr.properties {
+                    match prop {
+                        ObjectPropertyKind::ObjectProperty(p) => {
+                            self.collect_expression_usages(&p.value, used);
+                        }
+                        ObjectPropertyKind::SpreadProperty(spread) => {
+                            self.collect_expression_usages(&spread.argument, used);
+                        }
+                    }
+                }
+            }
+            Expression::TemplateLiteral(tmpl) => {
+                for expr in &tmpl.expressions {
+                    self.collect_expression_usages(expr, used);
+                }
+            }
+            Expression::ArrowFunctionExpression(arrow) => {
+                for stmt in &arrow.body.statements {
+                    self.collect_usages(stmt, used);
+                }
+            }
+            Expression::FunctionExpression(func_expr) => {
+                if let Some(body) = &func_expr.body {
+                    for stmt in &body.statements {
+                        self.collect_usages(stmt, used);
+                    }
+                }
+            }
+            Expression::SequenceExpression(seq_expr) => {
+                for expr in &seq_expr.expressions {
+                    self.collect_expression_usages(expr, used);
                 }
             }
             _ => {}

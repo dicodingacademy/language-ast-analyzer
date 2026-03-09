@@ -83,10 +83,12 @@ impl TypeScriptAnalyzer {
                     if let Some(type_ann) = &var.id.type_annotation {
                         self.analyze_ts_type(issues, &type_ann.type_annotation, file_path, source_code);
                     }
+                    if let Some(init) = &var.init {
+                        self.analyze_expression(issues, init, file_path, source_code);
+                    }
                 }
             }
             Statement::FunctionDeclaration(func) => {
-                // Check for missing return type on exported functions
                 if func.return_type.is_none() {
                     self.add_issue(
                         issues,
@@ -99,6 +101,119 @@ impl TypeScriptAnalyzer {
                     );
                 } else if let Some(return_type) = &func.return_type {
                     self.analyze_ts_type(issues, &return_type.type_annotation, file_path, source_code);
+                }
+                // Check parameter types for `any`
+                for param in &func.params.items {
+                    if let Some(type_ann) = &param.pattern.type_annotation {
+                        self.analyze_ts_type(issues, &type_ann.type_annotation, file_path, source_code);
+                    }
+                }
+                // Traverse function body
+                if let Some(body) = &func.body {
+                    for stmt in &body.statements {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
+            Statement::BlockStatement(block) => {
+                for stmt in &block.body {
+                    self.analyze_statement(issues, stmt, file_path, source_code);
+                }
+            }
+            Statement::IfStatement(if_stmt) => {
+                self.analyze_statement(issues, &if_stmt.consequent, file_path, source_code);
+                if let Some(alternate) = &if_stmt.alternate {
+                    self.analyze_statement(issues, alternate, file_path, source_code);
+                }
+            }
+            Statement::ForStatement(for_stmt) => {
+                self.analyze_statement(issues, &for_stmt.body, file_path, source_code);
+            }
+            Statement::WhileStatement(while_stmt) => {
+                self.analyze_statement(issues, &while_stmt.body, file_path, source_code);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.analyze_statement(issues, &do_while_stmt.body, file_path, source_code);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.analyze_statement(issues, &for_in_stmt.body, file_path, source_code);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.analyze_statement(issues, &for_of_stmt.body, file_path, source_code);
+            }
+            Statement::ReturnStatement(ret_stmt) => {
+                if let Some(expr) = &ret_stmt.argument {
+                    self.analyze_expression(issues, expr, file_path, source_code);
+                }
+            }
+            Statement::ExpressionStatement(expr_stmt) => {
+                self.analyze_expression(issues, &expr_stmt.expression, file_path, source_code);
+            }
+            _ => {}
+        }
+    }
+
+    fn analyze_expression(
+        &self,
+        issues: &mut Vec<CodeIssue>,
+        expr: &Expression,
+        file_path: &Path,
+        source_code: &str,
+    ) {
+        match expr {
+            Expression::ArrowFunctionExpression(arrow) => {
+                if arrow.return_type.is_none() {
+                    self.add_issue(
+                        issues,
+                        file_path,
+                        source_code,
+                        arrow.span,
+                        "Tipe return hilang pada arrow function - tambahkan tipe return eksplisit".to_string(),
+                        "explicit-function-return-type".to_string(),
+                        Severity::Suggestion,
+                    );
+                } else if let Some(return_type) = &arrow.return_type {
+                    self.analyze_ts_type(issues, &return_type.type_annotation, file_path, source_code);
+                }
+                // Check parameter types for `any`
+                for param in &arrow.params.items {
+                    if let Some(type_ann) = &param.pattern.type_annotation {
+                        self.analyze_ts_type(issues, &type_ann.type_annotation, file_path, source_code);
+                    }
+                }
+                for stmt in &arrow.body.statements {
+                    self.analyze_statement(issues, stmt, file_path, source_code);
+                }
+            }
+            Expression::FunctionExpression(func_expr) => {
+                if func_expr.return_type.is_none() {
+                    self.add_issue(
+                        issues,
+                        file_path,
+                        source_code,
+                        func_expr.span,
+                        "Tipe return hilang pada function expression - tambahkan tipe return eksplisit".to_string(),
+                        "explicit-function-return-type".to_string(),
+                        Severity::Suggestion,
+                    );
+                }
+                for param in &func_expr.params.items {
+                    if let Some(type_ann) = &param.pattern.type_annotation {
+                        self.analyze_ts_type(issues, &type_ann.type_annotation, file_path, source_code);
+                    }
+                }
+                if let Some(body) = &func_expr.body {
+                    for stmt in &body.statements {
+                        self.analyze_statement(issues, stmt, file_path, source_code);
+                    }
+                }
+            }
+            Expression::CallExpression(call_expr) => {
+                self.analyze_expression(issues, &call_expr.callee, file_path, source_code);
+                for arg in &call_expr.arguments {
+                    if let Some(expr) = arg.as_expression() {
+                        self.analyze_expression(issues, expr, file_path, source_code);
+                    }
                 }
             }
             _ => {}

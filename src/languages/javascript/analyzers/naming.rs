@@ -97,43 +97,6 @@ impl NamingAnalyzer {
         }
     }
 
-    fn is_boolean_without_prefix(name: &str) -> bool {
-        // Check if it looks like a boolean (no type annotation, but name suggests it)
-        // This is heuristic-based
-        let prefixes = ["is", "has", "can", "should", "will", "are"];
-        let name_lower = name.to_lowercase();
-
-        // If it starts with a prefix, it's good
-        for prefix in &prefixes {
-            if name_lower.starts_with(prefix) {
-                return false;
-            }
-        }
-
-        // Check if it might be a boolean (common boolean words without prefix)
-        let boolean_words = [
-            "active",
-            "visible",
-            "enabled",
-            "disabled",
-            "ready",
-            "loading",
-            "valid",
-            "invalid",
-            "allowed",
-            "blocked",
-            "open",
-            "closed",
-            "true",
-            "false",
-            "undefined",
-            "null",
-            "empty",
-        ];
-
-        boolean_words.contains(&name_lower.as_str())
-    }
-
     fn is_generic_function_name(name: &str) -> bool {
         // Only flag truly generic function names
         // Allow common patterns: handle, handler, callback are standard in JS
@@ -208,18 +171,8 @@ impl NamingAnalyzer {
                             );
                         }
 
-                        // Check for boolean without prefix (heuristic)
-                        if Self::is_boolean_without_prefix(name) {
-                            self.add_issue(
-                                issues,
-                                file_path,
-                                source_code,
-                                ident.span,
-                                format!("Dalam penulisan variable boolean seperti'{}' kamu bisa menambahkan sebuah prefix seperti is/has/can/should agar kita tahu nilai kembalian dari variable tersebut adalah boolean", name),
-                                "boolean-prefix".to_string(),
-                                Severity::Suggestion,
-                            );
-                        }
+                        // Boolean prefix check removed - heuristic based on name alone
+                        // produces too many false positives without type information
                     }
                 }
             }
@@ -337,6 +290,41 @@ impl NamingAnalyzer {
             Statement::ExpressionStatement(expr_stmt) => {
                 self.analyze_expression(issues, &expr_stmt.expression, file_path, source_code);
             }
+            Statement::WhileStatement(while_stmt) => {
+                self.analyze_statement(issues, &while_stmt.body, file_path, source_code, declared_names, context);
+            }
+            Statement::DoWhileStatement(do_while_stmt) => {
+                self.analyze_statement(issues, &do_while_stmt.body, file_path, source_code, declared_names, context);
+            }
+            Statement::ForInStatement(for_in_stmt) => {
+                self.analyze_statement(issues, &for_in_stmt.body, file_path, source_code, declared_names, context);
+            }
+            Statement::ForOfStatement(for_of_stmt) => {
+                self.analyze_statement(issues, &for_of_stmt.body, file_path, source_code, declared_names, context);
+            }
+            Statement::TryStatement(try_stmt) => {
+                for stmt in &try_stmt.block.body {
+                    self.analyze_statement(issues, stmt, file_path, source_code, declared_names, context);
+                }
+                if let Some(handler) = &try_stmt.handler {
+                    for stmt in &handler.body.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code, declared_names, context);
+                    }
+                }
+                if let Some(finalizer) = &try_stmt.finalizer {
+                    for stmt in &finalizer.body {
+                        self.analyze_statement(issues, stmt, file_path, source_code, declared_names, context);
+                    }
+                }
+            }
+            Statement::SwitchStatement(switch_stmt) => {
+                for case in &switch_stmt.cases {
+                    for stmt in &case.consequent {
+                        self.analyze_statement(issues, stmt, file_path, source_code, declared_names, context);
+                    }
+                }
+            }
+            Statement::ReturnStatement(_) => {}
             _ => {}
         }
     }

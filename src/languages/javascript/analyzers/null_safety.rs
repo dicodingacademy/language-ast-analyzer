@@ -89,7 +89,7 @@ impl NullSafetyAnalyzer {
                                     file_path,
                                     source_code,
                                     var.span,
-                                    "Destructuring tanpa nilai default. Gunakan: const { prop = defaultValue } = obj".to_string(),
+                                    "Destructuring objek tanpa nilai default bisa menghasilkan nilai undefined. Contoh aman: const { prop = defaultValue } = obj".to_string(),
                                     "no-unsafe-destructuring".to_string(),
                                     Severity::Suggestion,
                                 );
@@ -106,7 +106,7 @@ impl NullSafetyAnalyzer {
                                         file_path,
                                         source_code,
                                         var.span,
-                                        "Disini kamu melakukan destructuring array tanpa melakukan set default values, bisa dipertimbangkan untuk melakukan hal ini jika perlu ya \nContoh: const [first = defaultValue] = iniNilaiArray".to_string(),
+                                        "Destructuring array tanpa nilai default bisa menghasilkan nilai undefined. Contoh aman: const [first = defaultValue] = array".to_string(),
                                         "no-unsafe-destructuring".to_string(),
                                         Severity::Suggestion,
                                     );

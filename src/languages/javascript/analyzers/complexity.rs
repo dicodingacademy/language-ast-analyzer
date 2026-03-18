@@ -164,7 +164,7 @@ impl ComplexityAnalyzer {
                         file_path,
                         source_code,
                         for_stmt.span,
-                        format!("Loop is too deeply nested (level {})", new_depth),
+                        format!("Loop terlalu dalam (level {}). Pertimbangkan refactoring untuk mengurangi kompleksitas", new_depth),
                         "max-depth".to_string(),
                         Severity::Warning,
                     );
@@ -202,7 +202,7 @@ impl ComplexityAnalyzer {
                         file_path,
                         source_code,
                         while_stmt.span,
-                        format!("Loop is too deeply nested (level {})", new_depth),
+                        format!("Loop terlalu dalam (level {}). Pertimbangkan refactoring untuk mengurangi kompleksitas", new_depth),
                         "max-depth".to_string(),
                         Severity::Warning,
                     );
@@ -218,7 +218,7 @@ impl ComplexityAnalyzer {
                         file_path,
                         source_code,
                         do_while_stmt.span,
-                        format!("Loop is too deeply nested (level {})", new_depth),
+                        format!("Loop terlalu dalam (level {}). Pertimbangkan refactoring untuk mengurangi kompleksitas", new_depth),
                         "max-depth".to_string(),
                         Severity::Warning,
                     );

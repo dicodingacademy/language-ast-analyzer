@@ -79,7 +79,7 @@ impl BestPracticeAnalyzer {
                         file_path,
                         source_code,
                         var.span,
-                        format!("Gunakan 'let' atau 'const' sebagai pengganti 'var' untuk variabel '{}'", var_name),
+                        format!("Gunakan 'const' atau 'let' sebagai pengganti 'var' untuk variabel '{}'. Var memiliki function scope yang bisa menyebabkan bug tak terduga. Referensi: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var", var_name),
                         "no-var".to_string(),
                         Severity::Suggestion,
                     );
@@ -151,7 +151,7 @@ impl BestPracticeAnalyzer {
                             file_path,
                             source_code,
                             handler.span,
-                            "Blok catch kosong - tambahkan error handling atau hapus catch".to_string(),
+                            "Blok catch kosong menyembunyikan error. Tambahkan penanganan error di dalamnya, atau gunakan logging minimal seperti console.error(err)".to_string(),
                             "no-empty-catch".to_string(),
                             Severity::Suggestion,
                         );
@@ -236,7 +236,7 @@ impl BestPracticeAnalyzer {
                         file_path,
                         source_code,
                         bin_expr.span,
-                        "Gunakan '===' sebagai pengganti '==' untuk perbandingan equality yang ketat".to_string(),
+                        "Gunakan '===' (atau '!==') sebagai pengganti '==' agar tidak ada konversi tipe implisit yang bisa menyebabkan hasil tak terduga. Referensi: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness".to_string(),
                         "eqeqeq".to_string(),
                         Severity::Suggestion,
                     );
@@ -254,7 +254,7 @@ impl BestPracticeAnalyzer {
                                 file_path,
                                 source_code,
                                 unary_expr.span,
-                                "Hindari penggunaan double negation (!!) - gunakan Boolean() untuk kejelasan".to_string(),
+                                "Hindari double negation (!!) karena kurang ekspresif. Gunakan Boolean() untuk mengkonversi nilai ke boolean secara eksplisit.".to_string(),
                                 "no-double-negation".to_string(),
                                 Severity::Suggestion,
                             );
@@ -269,7 +269,7 @@ impl BestPracticeAnalyzer {
                         file_path,
                         source_code,
                         unary_expr.span,
-                        "Hindari penggunaan void operator - ini dapat membingungkan".to_string(),
+                        "Hindari operator void karena jarang diperlukan dan bisa membingungkan pembaca kode. Gunakan undefined secara langsung jika memang diperlukan.".to_string(),
                         "no-void".to_string(),
                         Severity::Suggestion,
                     );
@@ -294,7 +294,7 @@ impl BestPracticeAnalyzer {
                         file_path,
                         source_code,
                         seq_expr.span,
-                        "Hindari penggunaan comma operator - ini dapat membuat kode tidak jelas".to_string(),
+                        "Hindari comma operator karena membuat kode sulit dibaca. Pisahkan ekspresi menjadi statement yang berbeda.".to_string(),
                         "no-sequences".to_string(),
                         Severity::Suggestion,
                     );

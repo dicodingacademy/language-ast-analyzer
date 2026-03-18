@@ -152,7 +152,7 @@ impl NamingAnalyzer {
                                 file_path,
                                 source_code,
                                 ident.span,
-                                format!("Variable '{}' memiliki penamaan yang cukup umum, bisa kamu buat agar lebih deskriptif agar tidak membingungkan ya.", name),
+                                format!("Nama variabel '{}' terlalu umum. Gunakan nama yang lebih deskriptif agar kode mudah dipahami.", name),
                                 "no-generic-name".to_string(),
                                 Severity::Suggestion,
                             );
@@ -165,7 +165,7 @@ impl NamingAnalyzer {
                                 file_path,
                                 source_code,
                                 ident.span,
-                                format!("Variable '{}' memiliki penamaan yang cukup pendek. kamu bisa gunakan penamaan variable yang lebih deskriptif agar kamu tidak bingung dikemudian hari :)", name),
+                                format!("Nama variabel '{}' terlalu pendek. Gunakan nama yang lebih deskriptif agar kode mudah dipahami di kemudian hari.", name),
                                 "no-short-name".to_string(),
                                 Severity::Suggestion,
                             );
@@ -191,7 +191,7 @@ impl NamingAnalyzer {
                             file_path,
                             source_code,
                             func.span,
-                            format!("Fungsi '{}' memiliki penamaan variable yang cukup umum. Gunakan penamaan variable yang dapat menggambarkan untuk apa fungsi tersebut dibuat", func_name),
+                            format!("Nama fungsi '{}' terlalu umum. Gunakan nama yang mendeskripsikan tujuan fungsi dengan kata kerja yang spesifik.", func_name),
                             "no-generic-function-name".to_string(),
                             Severity::Suggestion,
                         );
@@ -258,7 +258,7 @@ impl NamingAnalyzer {
                                                 source_code,
                                                 ident.span,
                                                 format!(
-                                                    "Variabel '{}' memiliki penamaan yang cukup umum, kamu bisa improve agar lebih deskriptif ya agar tidak membingungkan",
+                                                    "Nama variabel '{}' terlalu umum. Gunakan nama yang lebih deskriptif agar kode mudah dipahami.",
                                                     name
                                                 ),
                                                 "no-generic-name".to_string(),
@@ -346,7 +346,7 @@ impl NamingAnalyzer {
                     file_path,
                     source_code,
                     ident.span,
-                    format!("Parameter '{}' memiliki penamaan yang cukup umum, agar tidak membingungkan kamu bisa gunakan penamaan yang lebih deskriptif", name),
+                    format!("Nama parameter '{}' terlalu umum. Gunakan nama yang lebih deskriptif agar kode mudah dipahami.", name),
                     "no-generic-name".to_string(),
                     Severity::Suggestion,
                 );

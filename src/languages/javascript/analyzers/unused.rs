@@ -79,7 +79,7 @@ impl UnusedAnalyzer {
                     file_path,
                     source_code,
                     *span,
-                    format!("Variabel '{}' dideklarasikan tapi tidak pernah digunakan", name),
+                    format!("Variabel '{}' dideklarasikan tapi tidak pernah digunakan. Hapus jika tidak diperlukan, atau tambahkan prefix '_' jika sengaja tidak digunakan (contoh: _{}).", name, name),
                     "no-unused-vars".to_string(),
                     Severity::Suggestion,
                 );

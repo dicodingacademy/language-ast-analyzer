@@ -229,7 +229,7 @@ impl MagicNumberAnalyzer {
                         file_path,
                         source_code,
                         num.span,
-                        format!("Angka magic {} ditemukan. Gunakan konstanta bernama sebagai gantinya", num.value),
+                        format!("Angka {} adalah magic number yang maknanya tidak jelas. Pindahkan ke konstanta bernama agar kode mudah dipahami, contoh: const MAX_RETRY = {}", num.value, num.value),
                         "no-magic-numbers".to_string(),
                         Severity::Suggestion,
                     );
@@ -248,7 +248,7 @@ impl MagicNumberAnalyzer {
                             file_path,
                             source_code,
                             str_lit.span,
-                            format!("String hardcoded terlalu panjang ({} karakter). Pertimbangkan menggunakan konstanta", value.len()),
+                            format!("String hardcoded sepanjang {} karakter. Pertimbangkan memindahkan ke konstanta atau file konfigurasi terpisah agar mudah diubah.", value.len()),
                             "no-long-hardcoded-string".to_string(),
                             Severity::Suggestion,
                         );

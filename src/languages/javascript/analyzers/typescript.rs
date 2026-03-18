@@ -95,7 +95,7 @@ impl TypeScriptAnalyzer {
                         file_path,
                         source_code,
                         func.span,
-                        "Tipe return hilang pada fungsi - tambahkan tipe return eksplisit untuk keamanan tipe yang lebih baik".to_string(),
+                        "Fungsi ini tidak memiliki tipe return eksplisit. Tambahkan tipe return agar TypeScript bisa mendeteksi bug lebih awal, contoh: function nama(): string { ... }. Referensi: https://www.typescriptlang.org/docs/handbook/2/functions.html".to_string(),
                         "explicit-function-return-type".to_string(),
                         Severity::Suggestion,
                     );
@@ -168,7 +168,7 @@ impl TypeScriptAnalyzer {
                         file_path,
                         source_code,
                         arrow.span,
-                        "Tipe return hilang pada arrow function - tambahkan tipe return eksplisit".to_string(),
+                        "Arrow function ini tidak memiliki tipe return eksplisit. Tambahkan tipe return agar TypeScript bisa mendeteksi bug lebih awal, contoh: const nama = (): string => { ... }. Referensi: https://www.typescriptlang.org/docs/handbook/2/functions.html".to_string(),
                         "explicit-function-return-type".to_string(),
                         Severity::Suggestion,
                     );
@@ -192,7 +192,7 @@ impl TypeScriptAnalyzer {
                         file_path,
                         source_code,
                         func_expr.span,
-                        "Tipe return hilang pada function expression - tambahkan tipe return eksplisit".to_string(),
+                        "Function expression ini tidak memiliki tipe return eksplisit. Tambahkan tipe return agar TypeScript bisa mendeteksi bug lebih awal, contoh: const nama = function(): string { ... }. Referensi: https://www.typescriptlang.org/docs/handbook/2/functions.html".to_string(),
                         "explicit-function-return-type".to_string(),
                         Severity::Suggestion,
                     );
@@ -234,7 +234,7 @@ impl TypeScriptAnalyzer {
                     file_path,
                     source_code,
                     any_type.span,
-                    "Hindari penggunaan tipe 'any' - ini menghilangkan manfaat TypeScript".to_string(),
+                    "Hindari tipe 'any' karena menonaktifkan pengecekan tipe TypeScript. Gunakan tipe yang spesifik, atau 'unknown' jika tipe belum diketahui. Referensi: https://www.typescriptlang.org/docs/handbook/2/types-from-types.html".to_string(),
                     "no-any-type".to_string(),
                     Severity::Suggestion,
                 );

@@ -120,7 +120,7 @@ impl SecurityAnalyzer {
                                         file_path,
                                         source_code,
                                         var.span,
-                                        format!("Kemungkinan password/rahasia di-hardcode pada variabel '{}'", ident.name),
+                                        format!("Kemungkinan kredensial di-hardcode pada variabel '{}'. Gunakan environment variable sebagai gantinya, contoh: process.env.SECRET_KEY", ident.name),
                                         "no-hardcoded-secrets".to_string(),
                                     );
                                 }
@@ -243,7 +243,7 @@ impl SecurityAnalyzer {
                             file_path,
                             source_code,
                             ident.span,
-                            "Hindari penggunaan eval() - ini risiko keamanan dan masalah performa".to_string(),
+                            "Hindari eval() karena bisa mengeksekusi kode berbahaya dan memperlambat performa. Referensi: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval".to_string(),
                             "no-eval".to_string(),
                         );
                     }
@@ -264,7 +264,7 @@ impl SecurityAnalyzer {
                             file_path,
                             source_code,
                             ident.span,
-                            "Hindari penggunaan Function constructor - ini mirip eval() dan risiko keamanan".to_string(),
+                            "Hindari Function constructor karena berperilaku seperti eval() dan bisa mengeksekusi kode berbahaya. Gunakan fungsi biasa sebagai gantinya.".to_string(),
                             "no-new-func".to_string(),
                         );
                     }
@@ -281,7 +281,7 @@ impl SecurityAnalyzer {
                                         file_path,
                                         source_code,
                                         call_expr.span,
-                                        format!("Hindari penggunaan {} dengan argumen string - gunakan referensi fungsi", ident.name).to_string(),
+                                        format!("Hindari memanggil {}() dengan argumen string karena berperilaku seperti eval(). Gunakan referensi fungsi sebagai gantinya, contoh: {}(() => {{ ... }}, 1000)", ident.name, ident.name).to_string(),
                                         format!("no-{}-string", ident.name).to_string(),
                                     );
                                 }
@@ -299,7 +299,7 @@ impl SecurityAnalyzer {
                                 file_path,
                                 source_code,
                                 call_expr.span,
-                                "Hindari penggunaan document.write() - ini akan menghapus seluruh dokumen".to_string(),
+                                "Hindari document.write() karena akan menghapus seluruh konten dokumen. Gunakan DOM API seperti createElement() atau appendChild() sebagai gantinya.".to_string(),
                                 "no-document-write".to_string(),
                             );
                         }
@@ -331,7 +331,7 @@ impl SecurityAnalyzer {
                             file_path,
                             source_code,
                             new_expr.span,
-                            "Hindari penggunaan Function constructor - ini mirip eval() dan risiko keamanan".to_string(),
+                            "Hindari Function constructor karena berperilaku seperti eval() dan bisa mengeksekusi kode berbahaya. Gunakan fungsi biasa sebagai gantinya.".to_string(),
                             "no-new-func".to_string(),
                         );
                     }
@@ -354,7 +354,7 @@ impl SecurityAnalyzer {
                                 file_path,
                                 source_code,
                                 assign_expr.span,
-                                "Penggunaan innerHTML dapat menimbulkan serangan XSS. Pertimbangkan menggunakan textContent atau metode DOM".to_string(),
+                                "Penggunaan innerHTML dengan data yang tidak dipercaya dapat menyebabkan serangan XSS. Gunakan textContent untuk teks biasa, atau sanitasi input terlebih dahulu. Referensi: https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations".to_string(),
                                 "no-inner-html".to_string(),
                             );
                         }
@@ -364,7 +364,7 @@ impl SecurityAnalyzer {
                                 file_path,
                                 source_code,
                                 assign_expr.span,
-                                "Penggunaan outerHTML dapat menimbulkan serangan XSS. Pertimbangkan menggunakan metode DOM".to_string(),
+                                "Penggunaan outerHTML dengan data yang tidak dipercaya dapat menyebabkan serangan XSS. Gunakan metode DOM seperti replaceWith() sebagai gantinya.".to_string(),
                                 "no-outer-html".to_string(),
                             );
                         }
@@ -388,7 +388,7 @@ impl SecurityAnalyzer {
                                 file_path,
                                 source_code,
                                 member_expr.span,
-                                format!("Hapus console.{}() sebelum deploy ke produksi", method),
+                                format!("Hapus console.{}() sebelum deploy ke produksi, atau gunakan library logging yang bisa dikonfigurasi per environment", method),
                                 "no-console".to_string(),
                             );
                         }
